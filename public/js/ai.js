@@ -31,7 +31,7 @@ export function aiReason(t, today = todayStr()) {
     else if (diff <= 2) r.push('截止时间临近');
     else r.push(diff + '天后截止');
   }
-  if (t.status === '进行中') r.push('进行中');
+
   return r.length > 0 ? r.join('，') : '常规处理';
 }
 

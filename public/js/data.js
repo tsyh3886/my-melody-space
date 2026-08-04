@@ -76,6 +76,17 @@ export async function updateNote(id, patch) { const r = await api('/api/notes/' 
 export async function deleteNote(id) { await api('/api/notes/' + id, { method: 'DELETE' }); state.notes = state.notes.filter((x) => x.id !== id); }
 
 export async function importLegacy(payload) { return api('/api/import', { method: 'POST', body: payload }); }
+
+// 真实 AI（LLM）能力：未配置 Key 或失败时抛错，由调用方回退本地规则
+export async function requestAiBreakdown(goalName, goalDescription) {
+  return api('/api/ai', { method: 'POST', body: { action: 'breakdown', goalName, goalDescription } });
+}
+export async function requestAiPlan(tasks) {
+  return api('/api/ai', { method: 'POST', body: { action: 'plan', tasks } });
+}
+export async function fetchAiStatus() {
+  return api('/api/ai/status');
+}
 export async function clearAllData() {
   await api('/api/data', { method: 'DELETE' });
   state.tasks = [];

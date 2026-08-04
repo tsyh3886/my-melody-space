@@ -56,7 +56,7 @@
 <button class="btn btn-primary btn-block" id="btn-add-task" style="margin-bottom:14px">➕ 添加任务</button>
 <button class="btn btn-purple btn-block" id="btn-ai-sort" style="margin-bottom:14px">Melo智能排序</button>
 <div id="ai-sort-ctr"></div>
-<div class="ftabs" id="task-filters"><div class="ftab active" data-filter="all">全部</div><div class="ftab" data-filter="待完成">待完成</div><div class="ftab" data-filter="进行中">进行中</div><div class="ftab" data-filter="已完成">已完成</div></div>
+<div class="ftabs" id="task-filters"><div class="ftab active" data-filter="all">全部</div><div class="ftab" data-filter="待完成">待完成</div><div class="ftab" data-filter="已完成">已完成</div></div>
 <div id="task-list"></div>
 </section>
 <section id="page-goals" class="page">
@@ -72,8 +72,8 @@
 </section>
 <section id="page-assistant" class="page">
 <div class="banner"><span class="banner-icon melody-avatar melody-avatar-5"></span><span class="banner-text">让我帮你整理今天的节奏</span></div>
-<div class="ai-section"><div class="ai-sec-title">今日规划</div><div class="ai-sec-desc">根据任务优先级和截止日期，生成今日建议安排</div><button class="btn btn-primary btn-block" id="btn-ai-plan">生成今日规划</button><div id="ai-plan-result"></div></div>
-<div class="ai-section"><div class="ai-sec-title">任务分析</div><div class="ai-sec-desc">智能排序所有待办任务，推荐最佳处理顺序</div><button class="btn btn-purple btn-block" id="btn-ai-tasks">帮我安排任务</button><div id="ai-tasks-result"></div></div>
+<div class="ai-section"><div class="ai-sec-title">今日规划</div><div class="ai-sec-desc">AI 根据优先级和截止日期安排今天的节奏（未配置 AI 时使用本地规则）</div><button class="btn btn-primary btn-block" id="btn-ai-plan">生成今日规划</button><div id="ai-plan-result"></div></div>
+
 <div class="ai-section"><div class="ai-sec-title">成长总结</div><div class="ai-sec-desc">回顾你的任务完成、知识记录和目标进度</div><button class="btn btn-green btn-block" id="btn-ai-summary">生成本周总结</button><div id="ai-summary-result"></div></div>
 </section>
 </div>

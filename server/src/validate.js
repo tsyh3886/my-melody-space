@@ -3,7 +3,7 @@
 export const TASK_CATEGORIES = ['工作', '学习', '生活', '其他'];
 export const NOTE_CATEGORIES = ['学习', '灵感', '收藏', '其他'];
 export const PRIORITIES = ['高', '中', '低'];
-export const STATUSES = ['待完成', '进行中', '已完成'];
+export const STATUSES = ['待完成', '已完成'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function pickIn(value, list, label) {
@@ -52,6 +52,11 @@ export function normalizeTask(body, { requireTitle = false } = {}) {
   if (body.dueDate !== undefined) {
     if (body.dueDate !== '' && !DATE_RE.test(body.dueDate)) return { error: '截止日期格式应为 YYYY-MM-DD' };
     value.dueDate = body.dueDate || null;
+  }
+  if (body.goalId !== undefined) {
+    if (body.goalId === null || body.goalId === '') value.goalId = null;
+    else if (typeof body.goalId !== 'string' || body.goalId.length > 64) return { error: '目标 ID 不合法' };
+    else value.goalId = body.goalId;
   }
   return { value };
 }

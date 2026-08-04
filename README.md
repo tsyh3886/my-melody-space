@@ -10,10 +10,10 @@ My Melody 治愈风个人数字空间：任务管理、目标管理、知识库�
 ## 功能
 
 - **首页（数字房间）**：日期时钟、欢迎语、累计统计、今日状态、当前目标、Melo 建议
-- **任务**：CRUD、分类 / 优先级 / 状态 / 截止日期、Melo 智能排序、快捷完成
-- **目标**：CRUD、进度（0-100）、截止时间、Melo 三阶段拆解
+- **任务**：CRUD、分类 / 优先级 / 状态（待完成 / 已完成）/ 截止日期、Melo 智能排序、快捷完成
+- **目标**：CRUD、截止时间、子任务管理；进度由子任务完成情况自动统计，AI 一键拆解生成子任务
 - **知识库**：CRUD、标签、分类、搜索、Melo 摘要 / 关键词 / 分类建议
-- **Melo 助手**：本地规则引擎（不调用外部 AI）：今日规划、任务分析、成长总结
+- **Melo 助手**：今日规划与 AI 拆解支持真实大模型（LLM），未配置 Key 时自动回退本地规则引擎
 - **账号体系**：注册 / 登录 / 退出，多设备同步（数据在服务器）
 - **数据能力**：JSON 备份导出 / 恢复导入、旧版单文件数据一次性迁移、账号数据清空
 - **PWA**：manifest + Service Worker（App Shell 缓存、离线提示），可添加到主屏幕
@@ -31,7 +31,8 @@ my-melody-space/
 │   │   ├── db.js           # SQLite（node:sqlite）建库建表
 │   │   ├── auth.js         # bcrypt / JWT / Cookie / 鉴权中间件
 │   │   ├── validate.js     # 输入校验与归一化
-│   │   └── routes/         # auth / tasks / goals / notes / import / data
+│   │   ├── llm.js          # OpenAI 兼容大模型客户端（可配置 DeepSeek / OpenAI / Kimi 等）
+│   │   └── routes/         # auth / tasks / goals / notes / import / data / ai
 │   └── test/               # API 冒烟测试 + 前端冒烟测试
 └── public/                 # 前端（由 Express 托管）
     ├── index.html
@@ -58,6 +59,17 @@ npm run dev
 # 3. 打开
 # http://localhost:3000
 ```
+
+### 启用真实 AI（可选）
+
+不配置也能用：Melo 自动回退到本地规则引擎。想启用真实大模型：
+
+```bash
+cd server
+cp .env.example .env   # 然后填入 LLM_API_KEY（DeepSeek / OpenAI / Kimi 等任意 OpenAI 兼容接口）
+```
+
+设置页可查看当前 AI 状态（已连接模型 / 本地规则模式）。
 
 首次启动自动创建 `server/data/melody.db`（SQLite 文件），无需任何配置。
 

@@ -9,8 +9,11 @@ import goalRoutes from './routes/goals.js';
 import noteRoutes from './routes/notes.js';
 import importRoutes from './routes/import.js';
 import dataRoutes from './routes/data.js';
+import aiRoutes from './routes/ai.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// 本地开发支持 server/.env（LLM_API_KEY 等），不存在时忽略
+try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* 忽略 */ }
 const publicDir = path.join(__dirname, '..', '..', 'public');
 
 const app = express();
@@ -25,6 +28,7 @@ app.use('/api/goals', requireAuth, goalRoutes);
 app.use('/api/notes', requireAuth, noteRoutes);
 app.use('/api/import', requireAuth, importRoutes);
 app.use('/api/data', requireAuth, dataRoutes);
+app.use('/api/ai', requireAuth, aiRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: '接口不存在' }));
 
 app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' }));

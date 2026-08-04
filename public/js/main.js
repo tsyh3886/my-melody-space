@@ -1,7 +1,7 @@
 // 入口：事件绑定、模态框按钮注册表、时钟、离线检测
 import { initAuth, handleAuthSubmit, handleLogout, showAuthView, setAuthMode } from './auth.js';
 import { state, setUnauthorizedHandler, readLegacyLocalData } from './data.js';
-import { toast, closeModal, confirmInput, pendingConfirm, pendingInput } from './ui.js';
+import { toast, closeModal, pendingConfirm, pendingOk, pendingInput } from './ui.js';
 import * as render from './render.js';
 
 // 模态框内按钮的统一处理（ES Modules 下内联 onclick 不可用，改用 data-act 注册表）
@@ -17,6 +17,11 @@ const ACTIONS = {
     const v = document.getElementById('confirm-input-val').value;
     closeModal();
     if (cb) cb(v);
+  },
+  'confirm-ok': () => {
+    const cb = pendingOk;
+    closeModal();
+    if (cb) cb();
   },
   'save-task': () => render.saveTask(),
   'save-goal': () => render.saveGoal(),
@@ -92,26 +97,55 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  const pg = e.target.closest('[data-prog-goal]');
-  if (pg) {
-    const g = state.goals.find((x) => x.id === pg.dataset.progGoal);
-    if (g) {
-      confirmInput('更新进度（0-100）：', g.progress || 0, async (v) => {
-        const n = parseInt(v, 10) || 0;
-        const val = Math.max(0, Math.min(100, n));
+
+  const bg = e.target.closest('[data-bd-goal]');
+  if (bg) { render.showGoalBreakdown(bg.dataset.bdGoal); return; }
+
+  const tgs = e.target.closest('[data-toggle-sub]');
+  if (tgs) {
+    const t = state.tasks.find((x) => x.id === tgs.dataset.toggleSub);
+    if (t) {
+      const next = t.status === '已完成' ? '待完成' : '已完成';
+      import('./data.js').then(async ({ updateTask }) => {
         try {
-          await import('./data.js').then(({ updateGoal }) => updateGoal(g.id, { progress: val }));
+          await updateTask(t.id, { status: next });
           render.renderGoals();
           render.renderHome();
-          toast('进度已更新 ' + val + '%');
+          if (next === '已完成') toast('子任务完成');
         } catch (err) { toast(err.message); }
       });
     }
     return;
   }
 
-  const bg = e.target.closest('[data-bd-goal]');
-  if (bg) { render.showGoalBreakdown(bg.dataset.bdGoal); return; }
+  const dts = e.target.closest('[data-del-sub]');
+  if (dts) {
+    const id = dts.dataset.delSub;
+    import('./data.js').then(async ({ deleteTask }) => {
+      await deleteTask(id);
+      render.renderGoals();
+      render.renderHome();
+      toast('子任务已删除');
+    }).catch((err) => toast(err.message));
+    return;
+  }
+
+  const ats = e.target.closest('[data-add-sub]');
+  if (ats) {
+    const goalId = ats.dataset.addSub;
+    const input = document.getElementById('sub-input-' + goalId);
+    const title = input ? input.value.trim() : '';
+    if (!title) { toast('先输入子任务内容'); return; }
+    import('./data.js').then(async ({ createTask }) => {
+      try {
+        await createTask({ title, goalId, status: '待完成', priority: '中', category: '其他' });
+        render.renderGoals();
+        render.renderHome();
+        toast('子任务已添加');
+      } catch (err) { toast(err.message); }
+    });
+    return;
+  }
 
   const en = e.target.closest('[data-edit-note]');
   if (en) { render.openNoteModal(en.dataset.editNote); return; }
@@ -136,6 +170,7 @@ document.addEventListener('click', (e) => {
 
 // 会话过期统一回到登录页
 setUnauthorizedHandler(() => {
+  closeModal();
   showAuthView();
   toast('登录已过期，请重新登录');
 });
@@ -163,7 +198,6 @@ function bind() {
   document.getElementById('btn-add-note').addEventListener('click', () => render.openNoteModal(null));
   document.getElementById('btn-ai-sort').addEventListener('click', () => render.showAiSort());
   document.getElementById('btn-ai-plan').addEventListener('click', () => render.showAiPlan());
-  document.getElementById('btn-ai-tasks').addEventListener('click', () => render.showAiTasks());
   document.getElementById('btn-ai-summary').addEventListener('click', () => render.showAiSummary());
   document.getElementById('modal-close-btn').addEventListener('click', () => closeModal());
   document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });

@@ -1,6 +1,6 @@
 // 鉴权 UI：登录/注册视图、会话初始化、旧版数据导入引导
 import { state, checkSession, login, register, logout, fetchAllData, readLegacyLocalData, importLegacy } from './data.js';
-import { toast, confirmDel } from './ui.js';
+import { toast, confirmDel, closeModal } from './ui.js';
 import { renderAll } from './render.js';
 
 let authMode = 'login';
@@ -55,6 +55,7 @@ export async function handleAuthSubmit() {
 
 export async function handleLogout() {
   try { await logout(); } catch { /* 忽略网络错误，仍回登录页 */ }
+  closeModal(); // 退出按钮在设置弹窗内，先关掉再回登录页
   showAuthView();
   toast('已退出登录 👋');
 }
@@ -62,6 +63,7 @@ export async function handleLogout() {
 // 应用初始化：拉数据 + 展示 + 引导旧版数据导入
 export async function initApp() {
   await fetchAllData();
+  closeModal(); // 兜底：避免上一个会话残留弹窗
   hideAuthView();
   renderAll();
   maybePromptLegacyImport();

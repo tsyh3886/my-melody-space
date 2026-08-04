@@ -1,6 +1,6 @@
 // 渲染层：把 state 渲染到页面，包含所有模态框构建器
-import { state, createTask, updateTask, deleteTask, createGoal, updateGoal, deleteGoal, createNote, updateNote, deleteNote, updateNickname, exportBackup, clearAllData, readLegacyLocalData, importLegacy } from './data.js';
-import { esc, toast, openModal, closeModal, confirmDel, confirmInput } from './ui.js';
+import { state, createTask, updateTask, deleteTask, createGoal, updateGoal, deleteGoal, createNote, updateNote, deleteNote, updateNickname, exportBackup, clearAllData, readLegacyLocalData, importLegacy, requestAiBreakdown, requestAiPlan, fetchAiStatus } from './data.js';
+import { esc, toast, openModal, closeModal, confirmDel, confirmInput, confirmOk } from './ui.js';
 import { PO, todayStr, aiSort, aiReason, aiSug, aiBreakdown, aiSummary, aiGrowth, aiPlan } from './ai.js';
 
 export const editId = { task: null, goal: null, note: null };
@@ -81,13 +81,12 @@ export function renderHome() {
     lblRate.textContent = '完成率';
   }
 
-  if (gs.length > 0) {
-    const cg = gs.reduce((a, b) => ((a.progress || 0) < (b.progress || 0) ? a : b));
-    document.getElementById('cg-box').style.display = 'block';
-    document.getElementById('cg-name').textContent = '当前目标：' + cg.name;
+  const cg = gs.length > 0 ? gs.reduce((a, b) => ((a.progress || 0) < (b.progress || 0) ? a : b)) : null;
+  const showCg = cg && cg.subtaskCount > 0;
+  document.getElementById('cg-box').style.display = showCg ? 'block' : 'none';
+  if (showCg) {
+    document.getElementById('cg-name').textContent = '当前目标：' + cg.name + '（' + cg.subtaskDone + '/' + cg.subtaskCount + '）';
     document.getElementById('cg-prog').style.width = (cg.progress || 0) + '%';
-  } else {
-    document.getElementById('cg-box').style.display = 'none';
   }
   document.getElementById('ai-sug-text').textContent = aiSug(state.tasks, td);
 }
@@ -115,7 +114,7 @@ export function renderTasks() {
   fl.forEach((t) => {
     const pc = t.priority === '高' ? 'ph' : t.priority === '中' ? 'pm' : 'pl';
     const cc = t.category === '工作' ? 'tcw' : t.category === '学习' ? 'tcs' : t.category === '生活' ? 'tcl' : 'tco';
-    const sc = t.status === '待完成' ? 'tsp' : t.status === '进行中' ? 'tsd' : 'tsf';
+    const sc = t.status === '已完成' ? 'tsf' : 'tsp';
     const pr = t.priority === '高' ? 'tph' : t.priority === '中' ? 'tpm' : 'tpl';
     const od = isOD(t.dueDate, t.status);
     h += '<div class="task-item ' + pc + (t.status === '已完成' ? ' done' : '') + '">';
@@ -140,14 +139,34 @@ export function renderGoals() {
     el.innerHTML = '<div class="empty"><div class="empty-text">还没有设定目标，点击上方按钮开始你的第一个目标</div></div>';
     return;
   }
+  const subs = (gid) => state.tasks.filter((t) => t.goalId === gid);
   let h = '';
   gs.forEach((g) => {
+    const list = subs(g.id);
+    const total = g.subtaskCount || list.length;
+    const done = g.subtaskDone || list.filter((t) => t.status === '已完成').length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
     h += '<div class="goal-item"><div class="goal-header"><div class="goal-name">' + esc(g.name) + '</div><div style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" data-edit-goal="' + g.id + '">编辑</button><button class="btn btn-danger btn-sm" data-del-goal="' + g.id + '">删除</button></div></div>';
     if (g.description) h += '<div class="goal-desc">' + esc(g.description) + '</div>';
-    h += '<div class="gp-label"><span>进度</span><span>' + (g.progress || 0) + '%</span></div><div class="gp-bar"><div class="gp-fill" style="width:' + (g.progress || 0) + '%"></div></div>';
+    if (total > 0) {
+      h += '<div class="gp-label"><span>进度（子任务 ' + done + '/' + total + '）</span><span>' + pct + '%</span></div><div class="gp-bar"><div class="gp-fill" style="width:' + pct + '%"></div></div>';
+    } else {
+      h += '<div class="gp-label"><span>进度</span><span class="gp-none">未拆解</span></div><div class="gp-bar"><div class="gp-fill" style="width:0%"></div></div>';
+    }
     if (g.deadline) h += '<div class="goal-deadline">截止：' + fmtD(g.deadline) + '</div>';
-    h += '<div class="goal-actions"><button class="btn btn-soft btn-sm" data-prog-goal="' + g.id + '">更新进度</button><button class="btn btn-purple btn-sm" data-bd-goal="' + g.id + '">AI拆解</button></div>';
-    h += '<div id="bd-' + g.id + '"></div></div>';
+    h += '<div class="goal-actions"><button class="btn btn-purple btn-sm" data-bd-goal="' + g.id + '">AI拆解</button></div>';
+    h += '<div id="bd-' + g.id + '"></div>';
+    if (list.length > 0) {
+      h += '<div class="sub-list">';
+      list.forEach((t) => {
+        h += '<div class="sub-item"><div class="tcheck' + (t.status === '已完成' ? ' checked' : '') + '" data-toggle-sub="' + t.id + '" role="checkbox" aria-checked="' + (t.status === '已完成') + '" tabindex="0"></div><div class="sub-title' + (t.status === '已完成' ? ' done' : '') + '">' + esc(t.title) + '</div><button class="btn btn-danger btn-sm" data-del-sub="' + t.id + '">×</button></div>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div class="sub-empty">还没有子任务，手动添加或让 AI 拆解</div>';
+    }
+    h += '<div class="sub-add"><input type="text" class="fi" id="sub-input-' + g.id + '" placeholder="添加一个子任务..."><button class="btn btn-primary btn-sm" data-add-sub="' + g.id + '">＋ 添加</button></div>';
+    h += '</div>';
   });
   el.innerHTML = h;
 }
@@ -193,7 +212,7 @@ export function openTaskModal(id) {
   body += '<div class="fr"><div class="fg"><label class="fl">分类</label><select class="fs" id="f-task-cat">' + sel(t && t.category === '工作', '工作') + sel(t && t.category === '学习', '学习') + sel(t && t.category === '生活', '生活') + sel(!t || t.category === '其他', '其他') + '</select></div>';
   body += '<div class="fg"><label class="fl">截止日期</label><input type="date" class="fi" id="f-task-due" value="' + (t ? t.dueDate || '' : '') + '"></div></div>';
   body += '<div class="fr"><div class="fg"><label class="fl">优先级</label><select class="fs" id="f-task-pri">' + sel(t && t.priority === '高', '高') + sel(!t || t.priority === '中', '中') + sel(t && t.priority === '低', '低') + '</select></div>';
-  body += '<div class="fg"><label class="fl">状态</label><select class="fs" id="f-task-st">' + sel(!t || t.status === '待完成', '待完成') + sel(t && t.status === '进行中', '进行中') + sel(t && t.status === '已完成', '已完成') + '</select></div></div>';
+  body += '<div class="fg"><label class="fl">状态</label><select class="fs" id="f-task-st">' + sel(!t || t.status === '待完成', '待完成') + sel(t && t.status === '已完成', '已完成') + '</select></div></div>';
   body += '<div class="fa"><button class="btn btn-secondary" data-act="modal-close">取消</button><button class="btn btn-primary" data-act="save-task">保存</button></div>';
   openModal(id ? '编辑任务' : '添加任务', body);
 }
@@ -228,8 +247,8 @@ export function openGoalModal(id) {
   const g = id ? state.goals.find((x) => x.id === id) : null;
   let body = '<div class="fg"><label class="fl">目标名称</label><input type="text" class="fi" id="f-goal-name" value="' + esc(g ? g.name : '') + '" placeholder="如：学习英语"></div>';
   body += '<div class="fg"><label class="fl">描述</label><textarea class="fta" id="f-goal-desc" placeholder="目标描述...">' + esc(g ? g.description || '' : '') + '</textarea></div>';
-  body += '<div class="fr"><div class="fg"><label class="fl">截止时间</label><input type="date" class="fi" id="f-goal-dl" value="' + (g ? g.deadline || '' : '') + '"></div>';
-  body += '<div class="fg"><label class="fl">进度</label><input type="range" id="f-goal-prog" min="0" max="100" value="' + (g ? g.progress || 0 : 0) + '" oninput="this.nextElementSibling.textContent=this.value+\'%\'"><div class="fl" style="text-align:center;color:var(--pink-d);font-weight:700">' + (g ? g.progress || 0 : 0) + '%</div></div></div>';
+  body += '<div class="fg"><label class="fl">截止时间</label><input type="date" class="fi" id="f-goal-dl" value="' + (g ? g.deadline || '' : '') + '"></div>';
+  body += '<div class="goal-auto-hint">进度由子任务完成情况自动统计</div>';
   body += '<div class="fa"><button class="btn btn-secondary" data-act="modal-close">取消</button><button class="btn btn-primary" data-act="save-goal">保存</button></div>';
   openModal(id ? '编辑目标' : '添加目标', body);
 }
@@ -241,7 +260,6 @@ export async function saveGoal() {
     name,
     description: document.getElementById('f-goal-desc').value.trim(),
     deadline: document.getElementById('f-goal-dl').value,
-    progress: parseInt(document.getElementById('f-goal-prog').value, 10) || 0,
   };
   try {
     if (editId.goal) {
@@ -310,17 +328,36 @@ export function showAiSort() {
   toast('已生成推荐顺序');
 }
 
-export function showGoalBreakdown(id) {
+export async function showGoalBreakdown(id) {
   const g = state.goals.find((x) => x.id === id);
   if (!g) return;
-  const phases = aiBreakdown(g.name);
   const el = document.getElementById('bd-' + id);
+  let steps = [];
+  let source = 'rule';
+  try {
+    const r = await requestAiBreakdown(g.name, g.description || '');
+    steps = r.steps || [];
+    source = 'llm';
+  } catch (err) {
+    steps = aiBreakdown(g.name);
+    toast(err.message || 'AI 服务暂不可用，使用本地规则拆解');
+  }
+  if (steps.length === 0) { toast('拆解失败，请重试'); return; }
   const icons = ['📖', '💪', '✨'];
-  let h = '<div class="bd-result">';
-  phases.forEach((p, i) => { h += '<div class="bd-phase"><span class="bd-phase-icon">' + (icons[i] || '📌') + '</span><span>' + esc(p) + '</span></div>'; });
+  let h = '<div class="bd-result"><div class="ai-src-badge">' + (source === 'llm' ? 'AI 生成' : '本地规则模式') + '</div>';
+  steps.forEach((p, i) => { h += '<div class="bd-phase"><span class="bd-phase-icon">' + (icons[i % icons.length]) + '</span><span>' + esc(p) + '</span></div>'; });
   h += '</div>';
-  if (el.innerHTML.trim()) el.innerHTML = '';
-  else el.innerHTML = h;
+  el.innerHTML = h;
+  confirmOk('将把以上 ' + steps.length + ' 个子任务添加到目标「' + esc(g.name) + '」，完成子任务会自动累计进度，确定吗？', async () => {
+    try {
+      for (const s of steps) {
+        await createTask({ title: s, goalId: g.id, status: '待完成', priority: '中', category: '其他' });
+      }
+      renderGoals();
+      renderHome();
+      toast('拆解完成，' + steps.length + ' 个子任务已添加');
+    } catch (e) { toast(e.message); }
+  }, 'AI 拆解预览');
 }
 
 export function showNoteSummary(id) {
@@ -336,46 +373,47 @@ export function showNoteSummary(id) {
   toast('Melo整理完成');
 }
 
-export function showAiPlan() {
-  const p = aiPlan(state.tasks);
+export async function showAiPlan() {
   const el = document.getElementById('ai-plan-result');
-  if (p.total === 0) {
-    el.innerHTML = '<div class="ai-result" style="white-space:nowrap">没有待完成的任务，今天可以好好休息啦～ 🎀</div>';
+  const pend = state.tasks.filter((t) => t.status !== '已完成');
+  if (pend.length === 0) {
+    el.innerHTML = '<div class="ai-result">没有待完成的任务，今天可以好好休息啦～ 🎀</div>';
     return;
   }
-  let h = '<div class="ai-result">';
-  if (p.morning.length > 0) {
-    h += '<div class="ai-tb"><div class="ai-tl">🌅 上午（高能量时段）</div>';
-    p.morning.forEach((t, i) => { h += '<div class="ai-task">' + (i + 1) + '. ' + esc(t.title) + '</div>'; });
-    h += '</div>';
+  let p = null;
+  let source = 'rule';
+  try {
+    const r = await requestAiPlan(pend);
+    const byId = (ids) => (Array.isArray(ids) ? ids.map((id) => state.tasks.find((t) => t.id === id)).filter(Boolean) : []);
+    p = { morning: byId(r.morning), afternoon: byId(r.afternoon), evening: byId(r.evening), suggestion: r.suggestion || '' };
+    source = 'llm';
+  } catch (err) {
+    toast(err.message || 'AI 服务暂不可用，使用本地规则');
+    p = null;
   }
-  if (p.afternoon.length > 0) {
-    h += '<div class="ai-tb"><div class="ai-tl">☀️ 下午（专注时段）</div>';
-    p.afternoon.forEach((t, i) => { h += '<div class="ai-task">' + (i + 1) + '. ' + esc(t.title) + '</div>'; });
-    h += '</div>';
+  if (!p) { p = aiPlan(state.tasks); p.suggestion = ''; }
+  const total = p.morning.length + p.afternoon.length + p.evening.length;
+  if (total === 0) {
+    el.innerHTML = '<div class="ai-result">没有待完成的任务，今天可以好好休息啦～ 🎀</div>';
+    return;
   }
-  if (p.evening.length > 0) {
-    h += '<div class="ai-tb"><div class="ai-tl">🌙 晚上（轻松时段）</div>';
-    p.evening.forEach((t, i) => { h += '<div class="ai-task">' + (i + 1) + '. ' + esc(t.title) + '</div>'; });
+  const block = (title, icon, list) => {
+    if (!list || list.length === 0) return '';
+    let h = '<div class="ai-tb"><div class="ai-tl">' + icon + ' ' + title + '</div>';
+    list.forEach((t, i) => { h += '<div class="ai-task">' + (i + 1) + '. ' + esc(t.title) + '</div>'; });
     h += '</div>';
-  }
+    return h;
+  };
+  let h = '<div class="ai-result"><div class="ai-src-badge">' + (source === 'llm' ? 'AI 生成' : '本地规则模式') + '</div>';
+  h += block('上午（高能量时段）', '🌅', p.morning);
+  h += block('下午（专注时段）', '☀️', p.afternoon);
+  h += block('晚上（轻松时段）', '🌙', p.evening);
+  if (p.suggestion) h += '<div class="ai-plan-sug">' + esc(p.suggestion) + '</div>';
   h += '</div>';
   el.innerHTML = h;
   toast('今日规划已生成 📅');
 }
 
-export function showAiTasks() {
-  const s = aiSort(state.tasks);
-  const el = document.getElementById('ai-tasks-result');
-  if (s.length === 0) { el.innerHTML = '<div class="ai-result">所有任务都完成了！🎉</div>'; return; }
-  let h = '<div class="ai-result">';
-  s.slice(0, 10).forEach((t, i) => {
-    h += '<div style="margin-bottom:8px"><strong>' + (i + 1) + '. ' + esc(t.title) + '</strong><br><span style="font-size:12px;color:var(--text-l)">原因：' + aiReason(t) + '</span></div>';
-  });
-  h += '</div>';
-  el.innerHTML = h;
-  toast('任务分析完成 🔄');
-}
 
 export function showAiSummary() {
   const el = document.getElementById('ai-summary-result');
@@ -389,6 +427,7 @@ export function openSettings() {
   const legacy = readLegacyLocalData();
   const hasLegacy = legacy && (legacy.tasks.length > 0 || legacy.goals.length > 0 || legacy.notes.length > 0);
   let body = '<div class="fg"><label class="fl">你的昵称</label><input type="text" class="fi" id="f-set-name" value="' + esc(un) + '" placeholder="设置昵称后首页会显示"></div>';
+  body += '<div class="srow"><div><div class="slabel">AI 能力</div><div class="sdesc" id="ai-status-desc">检查中...</div></div></div>';
   body += '<div class="srow"><div><div class="slabel">📤 导出备份</div><div class="sdesc">下载当前账号数据的 JSON 文件</div></div><button class="btn btn-primary btn-sm" data-act="export-backup">导出</button></div>';
   body += '<div class="srow"><div><div class="slabel">📥 导入恢复</div><div class="sdesc">从 JSON 文件恢复数据（并入当前账号）</div></div><button class="btn btn-purple btn-sm" data-act="pick-import-file">导入</button></div>';
   if (hasLegacy) {

@@ -22,6 +22,8 @@ ok('首页为 ES Module 入口', html.includes('type="module" src="js/main.js"')
 ok('首页无 Google Fonts', !html.includes('fonts.googleapis'));
 ok('首页 viewport 允许缩放', /user-scalable=no/.test(html) === false);
 ok('首页无重复 apple meta', (html.match(/apple-mobile-web-app-capable/g) || []).length === 1);
+ok('首页无废弃「进行中」状态', !html.includes('进行中'));
+ok('首页无「任务分析」区块', !html.includes('任务分析'));
 
 res = await fetch(BASE + '/css/styles.css');
 let css = await res.text();
@@ -51,6 +53,11 @@ ok('注册成功', res.status === 201 && !!cookie);
 const auth = { 'Content-Type': 'application/json', Cookie: cookie };
 res = await fetch(BASE + '/api/tasks', { method: 'POST', headers: auth, body: JSON.stringify({ title: '前端冒烟任务', priority: '高' }) });
 ok('创建任务成功', res.status === 201);
+res = await fetch(BASE + '/api/goals', { method: 'POST', headers: auth, body: JSON.stringify({ name: '冒烟目标' }) });
+const goal = await res.json();
+ok('创建目标成功', res.status === 201);
+res = await fetch(BASE + '/api/tasks', { method: 'POST', headers: auth, body: JSON.stringify({ title: '冒烟子任务', goalId: goal.id }) });
+ok('创建目标子任务成功', res.status === 201);
 res = await fetch(BASE + '/api/import', { method: 'POST', headers: auth, body: JSON.stringify({ tasks: [{ title: '旧数据任务' }], goals: [], notes: [] }) });
 ok('导入旧数据成功', res.status === 200);
 

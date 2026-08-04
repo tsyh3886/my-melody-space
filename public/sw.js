@@ -1,5 +1,5 @@
 // Service Worker：App Shell 预缓存 + 静态资源 SWR，API 永不缓存
-const CACHE = 'mms-v1';
+const CACHE = 'mms-v2';
 const SHELL = [
   '/',
   '/index.html',
@@ -54,17 +54,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 静态资源：stale-while-revalidate
+  // 静态资源：网络优先（避免新旧版本混合导致白屏），失败回退缓存（离线兜底）
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(req).then((res) => {
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE).then((cache) => cache.put(req, copy));
+      }
+      return res;
+    }).catch(() => caches.match(req))
   );
 });

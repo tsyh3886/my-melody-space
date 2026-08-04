@@ -5,11 +5,17 @@ import { normalizeTask, normalizeGoal, normalizeNote } from '../validate.js';
 
 const router = Router();
 
+// 旧版数据存在已废弃的「进行中」状态，导入时统一转为「待完成」
+function coerceLegacy(v) {
+  if (v && typeof v === 'object' && v.status === '进行中') v = { ...v, status: '待完成' };
+  return v;
+}
+
 // 一次性导入：把旧版 localStorage 导出的数据并入当前账号（重新生成 id）
 router.post('/', (req, res) => {
   const body = req.body || {};
   const lists = [
-    { key: 'tasks', normalize: (v) => normalizeTask(v, { requireTitle: true }), insert: insertTask },
+    { key: 'tasks', normalize: (v) => normalizeTask(coerceLegacy(v), { requireTitle: true }), insert: insertTask },
     { key: 'goals', normalize: (v) => normalizeGoal(v, { requireName: true }), insert: insertGoal },
     { key: 'notes', normalize: (v) => normalizeNote(v, { requireTitle: true }), insert: insertNote },
   ];
@@ -47,8 +53,8 @@ router.post('/', (req, res) => {
 });
 
 function insertTask(v, userId, now) {
-  db.prepare('INSERT INTO tasks (id, user_id, title, category, due_date, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(randomUUID(), userId, v.title, v.category ?? '其他', v.dueDate ?? null, v.priority ?? '中', v.status ?? '待完成', now);
+  db.prepare('INSERT INTO tasks (id, user_id, title, category, due_date, priority, status, goal_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(randomUUID(), userId, v.title, v.category ?? '其他', v.dueDate ?? null, v.priority ?? '中', v.status ?? '待完成', v.goalId ?? null, now);
 }
 
 function insertGoal(v, userId, now) {
