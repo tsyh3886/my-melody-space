@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="美乐蒂空间">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFB7C5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+<title>My Melody 数字空间</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="offline-banner" id="offline-banner" role="status">网络开小差了，数据可能不是最新的，恢复后请刷新</div>
+<div class="bg-deco d1 melody-avatar melody-avatar-0"></div><div class="bg-deco d2 melody-avatar melody-avatar-1"></div><div class="bg-deco d3 melody-avatar melody-avatar-2"></div><div class="bg-deco d4 melody-avatar melody-avatar-3"></div><div class="bg-deco d5 melody-avatar melody-avatar-4"></div><div class="bg-deco d6 melody-avatar melody-avatar-5"></div><div class="bg-deco d7 melody-avatar melody-avatar-1"></div><div class="bg-deco d8 melody-avatar melody-avatar-5"></div><div class="bg-deco d10 melody-avatar melody-avatar-0"></div><div class="bg-deco d11 melody-avatar melody-avatar-4"></div><div class="bg-deco d12 melody-avatar melody-avatar-2"></div>
+
+<div id="auth-view" class="auth-view hidden">
+  <div class="auth-card">
+    <div class="melody-avatar melody-avatar-0 auth-logo"></div>
+    <div class="auth-title">美乐蒂数字空间</div>
+    <div class="auth-sub">登录后，任务、目标和笔记都会安全地保存在服务器上</div>
+    <div class="auth-tabs" role="tablist">
+      <div class="auth-tab active" data-tab="login" role="tab" aria-selected="true" tabindex="0">登录</div>
+      <div class="auth-tab" data-tab="register" role="tab" aria-selected="false" tabindex="0">注册</div>
+    </div>
+    <div class="fg" id="auth-nickname"><label class="fl" for="f-auth-nickname">昵称</label><input type="text" class="fi" id="f-auth-nickname" placeholder="想让大家怎么称呼你"></div>
+    <div class="fg"><label class="fl" for="f-auth-username">用户名</label><input type="text" class="fi" id="f-auth-username" placeholder="2-20 位中文/字母/数字/下划线" autocomplete="username"></div>
+    <div class="fg"><label class="fl" for="f-auth-password">密码</label><input type="password" class="fi" id="f-auth-password" placeholder="至少 6 位" autocomplete="current-password"></div>
+    <div class="fa"><button class="btn btn-primary btn-block" id="auth-submit">登录</button></div>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<div id="app-view" class="hidden">
+<div class="app">
+<section id="page-home" class="page active">
+<div class="tbar"><button class="tbar-btn" id="btn-settings" aria-label="设置">⚙️</button></div>
+<div class="welcome-card">
+<div class="melody-avatar melody-avatar-0 melody-logo"></div>
+<div class="w-date" id="home-date"></div>
+<div class="w-time" id="home-time"></div>
+<div class="w-msg" id="welcome-msg"></div>
+</div>
+<div class="stats-grid"><div class="stat-box"><div class="stat-num" id="stat-tasks">0</div><div class="stat-label">累计完成</div></div><div class="stat-box"><div class="stat-num" id="stat-goals">0</div><div class="stat-label">创建目标</div></div><div class="stat-box"><div class="stat-num" id="stat-notes">0</div><div class="stat-label">知识记录</div></div></div>
+<div class="card"><div class="card-title"><span class="bullet-dot"></span> 今日状态</div>
+<div class="status-row"><div class="status-item"><div class="status-num" id="today-total">0</div><div class="status-label" id="lbl-total">今日任务</div></div><div class="status-item"><div class="status-num green" id="today-done">0</div><div class="status-label" id="lbl-done">已完成</div></div><div class="status-item"><div class="status-num pink" id="today-rate">0%</div><div class="status-label" id="lbl-rate">完成率</div></div></div>
+<div id="cg-box" style="display:none" class="cg-box"><div class="cg-name" id="cg-name"></div><div class="mini-prog"><div class="mini-prog-fill" id="cg-prog" style="width:0%"></div></div></div>
+</div>
+<div class="card"><div class="card-title"><span class="bullet-dot"></span> Melo建议</div><div class="ai-sug"><div class="melody-avatar melody-avatar-5" style="width:40px;height:40px"></div><div class="ai-text" id="ai-sug-text"></div></div></div>
+</section>
+<section id="page-tasks" class="page">
+<div class="banner"><span class="banner-icon melody-avatar melody-avatar-4"></span><span class="banner-text">一步一步完成今天的小目标</span></div>
+<button class="btn btn-primary btn-block" id="btn-add-task" style="margin-bottom:14px">➕ 添加任务</button>
+<button class="btn btn-purple btn-block" id="btn-ai-sort" style="margin-bottom:14px">Melo智能排序</button>
+<div id="ai-sort-ctr"></div>
+<div class="ftabs" id="task-filters"><div class="ftab active" data-filter="all">全部</div><div class="ftab" data-filter="待完成">待完成</div><div class="ftab" data-filter="进行中">进行中</div><div class="ftab" data-filter="已完成">已完成</div></div>
+<div id="task-list"></div>
+</section>
+<section id="page-goals" class="page">
+<div class="banner"><span class="banner-icon melody-avatar melody-avatar-3"></span><span class="banner-text">慢慢靠近想成为的自己</span></div>
+<button class="btn btn-primary btn-block" id="btn-add-goal" style="margin-bottom:14px">➕ 添加目标</button>
+<div id="goal-list"></div>
+</section>
+<section id="page-knowledge" class="page">
+<div class="banner"><span class="banner-icon melody-avatar melody-avatar-1"></span><span class="banner-text">收集每一个闪闪发光的想法</span></div>
+<div class="sbar"><input type="text" class="sinput" id="note-search" placeholder="搜索笔记标题、内容或标签..."></div>
+<button class="btn btn-primary btn-block" id="btn-add-note" style="margin-bottom:14px">➕ 添加知识记录</button>
+<div id="note-list"></div>
+</section>
+<section id="page-assistant" class="page">
+<div class="banner"><span class="banner-icon melody-avatar melody-avatar-5"></span><span class="banner-text">让我帮你整理今天的节奏</span></div>
+<div class="ai-section"><div class="ai-sec-title">今日规划</div><div class="ai-sec-desc">根据任务优先级和截止日期，生成今日建议安排</div><button class="btn btn-primary btn-block" id="btn-ai-plan">生成今日规划</button><div id="ai-plan-result"></div></div>
+<div class="ai-section"><div class="ai-sec-title">任务分析</div><div class="ai-sec-desc">智能排序所有待办任务，推荐最佳处理顺序</div><button class="btn btn-purple btn-block" id="btn-ai-tasks">帮我安排任务</button><div id="ai-tasks-result"></div></div>
+<div class="ai-section"><div class="ai-sec-title">成长总结</div><div class="ai-sec-desc">回顾你的任务完成、知识记录和目标进度</div><button class="btn btn-green btn-block" id="btn-ai-summary">生成本周总结</button><div id="ai-summary-result"></div></div>
+</section>
+</div>
+<nav class="bnav"><div class="nav-item active" data-page="home"><span class="nav-icon melody-avatar melody-avatar-0"></span><span>首页</span></div><div class="nav-item" data-page="tasks"><span class="nav-icon melody-avatar melody-avatar-1"></span><span>任务</span></div><div class="nav-item" data-page="goals"><span class="nav-icon melody-avatar melody-avatar-2"></span><span>目标</span></div><div class="nav-item" data-page="knowledge"><span class="nav-icon melody-avatar melody-avatar-3"></span><span>知识</span></div><div class="nav-item" data-page="assistant"><span class="nav-icon melody-avatar melody-avatar-5"></span><span>Melo</span></div></nav>
+<div class="modal-overlay" id="modal-overlay"><div class="modal-sheet" id="modal-sheet"><div class="modal-header"><div class="modal-title" id="modal-title">标题</div><button class="modal-close" id="modal-close-btn" aria-label="关闭">×</button></div><div id="modal-body"></div></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" class="hf" id="import-file" accept=".json,application/json">
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

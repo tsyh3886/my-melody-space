@@ -1,0 +1,19 @@
+{
+  "name": "my-melody-space-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "My Melody 数字空间 - 后端 API（Express + node:sqlite + JWT）",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/api.test.mjs && node test/frontend.smoke.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
