@@ -1,4 +1,4 @@
-# 美乐蒂数字空间（My Melody Space）🌸
+﻿# 美乐蒂数字空间（My Melody Space）🌸
 
 My Melody 治愈风个人数字空间：任务管理、目标管理、知识库与 Melo 助手，前后端全栈、可多端同步的 PWA 应用。
 
@@ -127,3 +127,10 @@ NODE_ENV=production JWT_SECRET=<强随机密钥> PORT=3000 npm start
 旧版单文件应用（纯前端、localStorage、完全离线可用）保留在：
 `C:\Users\颜家如\WorkBuddy\2026-08-01-17-15-26\my-melody-space.html`。
 新版登录后可在「设置 → 旧版数据导入」将旧数据一次性迁入账号。
+## 部署上线（Cloudflare 免费版）
+
+本项目已支持 Cloudflare Pages + D1 免费部署（前端静态托管 + API 函数 + D1 数据库）。
+
+详细步骤见 [DEPLOY-CLOUDFLARE.md](DEPLOY-CLOUDFLARE.md)，流程：推送到 GitHub → Cloudflare Pages 连接仓库 → 创建 D1 并绑定为 `DB` → 配置环境变量（JWT_SECRET / LLM_API_KEY 等）→ 部署完成。
+
+本地测试 API（node:sqlite 模拟 D1）：`npm test`

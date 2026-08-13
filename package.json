@@ -1,12 +1,17 @@
-{
+﻿{
   "name": "my-melody-space",
   "version": "1.0.0",
   "private": true,
-  "description": "My Melody 数字空间 - 美乐蒂治愈风个人效率管理",
+  "type": "module",
+  "description": "My Melody 数字空间 - 美乐蒂治愈风个人效率管理（Cloudflare Pages + D1）",
   "scripts": {
-    "postinstall": "cd server && npm install",
     "start": "cd server && npm start",
-    "dev": "cd server && npm run dev"
+    "dev": "cd server && npm run dev",
+    "test": "node test/cf-api.test.mjs"
   },
-  "engines": { "node": ">=24" }
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2"
+  }
 }
