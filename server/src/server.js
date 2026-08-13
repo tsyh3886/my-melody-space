@@ -13,7 +13,7 @@ import aiRoutes from './routes/ai.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // 本地开发支持 server/.env（LLM_API_KEY 等），不存在时忽略
-try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* 忽略 */ }
+try { process.loadEnvFile(path.join(__dirname, '..', '.env')); } catch { /* 忽略 */ }
 const publicDir = path.join(__dirname, '..', '..', 'public');
 
 const app = express();
