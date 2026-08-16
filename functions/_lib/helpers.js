@@ -1,4 +1,4 @@
-﻿// Cloudflare Pages Functions 通用助手
+// Cloudflare Pages Functions 通用助手
 export function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -12,7 +12,8 @@ export function jsonError(message, status = 400) {
 
 export async function parseBody(request) {
   try {
-    return await request.json();
+    const value = await request.json();
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   } catch {
     return {};
   }

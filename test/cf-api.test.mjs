@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEnv, dispatch, registerAndGetCookie, readJSON } from './harness.mjs';
 
@@ -48,6 +48,16 @@ test('非法注册参数返回 400', async () => {
   const env = await createEnv();
   const res = await dispatch(env, '/api/auth/register', { method: 'POST', body: { username: 'a', password: '123', nickname: 'x' } }, R.register);
   assert.equal(res.status, 400);
+});
+
+test('注册 body 为 null/数组返回 400 而非 500', async () => {
+  const env = await createEnv();
+  for (const body of [null, ['x']]) {
+    const res = await dispatch(env, '/api/auth/register', { method: 'POST', body }, R.register);
+    assert.equal(res.status, 400);
+    const data = await readJSON(res);
+    assert.ok(data.error && data.error.length > 0, '400 响应体应包含错误信息');
+  }
 });
 
 test('登录成功种 cookie，密码错误 401', async () => {
