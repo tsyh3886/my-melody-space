@@ -1,4 +1,4 @@
-﻿// /api/* 中间件：初始化表结构 + JWT 认证
+// /api/* 中间件：初始化表结构 + JWT 认证
 import { jsonError } from '../_lib/helpers.js';
 import { getToken, verifyToken } from '../_lib/auth.js';
 
@@ -68,7 +68,7 @@ export async function onRequest(context) {
   let user = null;
   if (token) {
     try {
-      const payload = verifyToken(env, token);
+      const payload = await verifyToken(env, token);
       user = await env.DB.prepare('SELECT id, username, nickname FROM users WHERE id = ?')
         .bind(payload.uid).first();
     } catch { /* 无效 token */ }

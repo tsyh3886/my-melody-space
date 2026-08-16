@@ -1,19 +1,48 @@
-﻿import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+﻿import bcrypt from 'bcryptjs';
 
 export const COOKIE_NAME = 'mms_token';
 const TOKEN_TTL_SECONDS = 7 * 24 * 3600; // 7 天
 
-function secret(env) {
-  return env.JWT_SECRET || 'dev-secret-change-me';
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+function b64url(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export function signToken(env, user) {
-  return jwt.sign({ uid: user.id, un: user.username }, secret(env), { expiresIn: TOKEN_TTL_SECONDS });
+function b64urlDecode(s) {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }
 
-export function verifyToken(env, token) {
-  return jwt.verify(token, secret(env));
+async function hmacKey(env) {
+  const secret = env.JWT_SECRET || 'dev-secret-change-me';
+  return crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+}
+
+export async function signToken(env, user) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(enc.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));
+  const payload = b64url(enc.encode(JSON.stringify({ uid: user.id, un: user.username, iat: now, exp: now + TOKEN_TTL_SECONDS })));
+  const data = `${header}.${payload}`;
+  const sig = await crypto.subtle.sign('HMAC', await hmacKey(env), enc.encode(data));
+  return `${data}.${b64url(new Uint8Array(sig))}`;
+}
+
+export async function verifyToken(env, token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) throw new Error('invalid token');
+  const [header, payload, sig] = parts;
+  const valid = await crypto.subtle.verify('HMAC', await hmacKey(env), b64urlDecode(sig), enc.encode(`${header}.${payload}`));
+  if (!valid) throw new Error('invalid token');
+  const claim = JSON.parse(dec.decode(b64urlDecode(payload)));
+  if (!claim.exp || claim.exp < Math.floor(Date.now() / 1000)) throw new Error('token expired');
+  return { uid: claim.uid, un: claim.un };
 }
 
 export function parseCookies(request) {

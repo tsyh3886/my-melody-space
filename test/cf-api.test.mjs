@@ -60,6 +60,15 @@ test('注册 body 为 null/数组返回 400 而非 500', async () => {
   }
 });
 
+test('篡改 token 返回 401', async () => {
+  const env = await createEnv();
+  const { cookie } = await registerAndGetCookie(env, 'tamper', 'secret123', '篡改');
+  const token = cookie.split(';')[0].split('=')[1];
+  const tampered = token.slice(0, -1) + (token.slice(-1) === 'a' ? 'b' : 'a');
+  const res = await dispatch(env, '/api/tasks', { cookie: 'mms_token=' + tampered }, R.tasks);
+  assert.equal(res.status, 401);
+});
+
 test('登录成功种 cookie，密码错误 401', async () => {
   const env = await createEnv();
   await registerAndGetCookie(env, 'bob', 'secret123', '鲍勃');

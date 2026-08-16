@@ -1,4 +1,4 @@
-﻿import { json, jsonError, parseBody } from '../../_lib/helpers.js';
+import { json, jsonError, parseBody } from '../../_lib/helpers.js';
 import { findUserByUsername, publicUser, signToken, authCookie, verifyPassword } from '../../_lib/auth.js';
 
 export async function onRequestPost(context) {
@@ -10,5 +10,5 @@ export async function onRequestPost(context) {
   if (!user || !(await verifyPassword(user, password))) {
     return jsonError('用户名或密码错误', 401);
   }
-  return json({ user: publicUser(user) }, 200, { 'Set-Cookie': authCookie(signToken(context.env, user)) });
+  return json({ user: publicUser(user) }, 200, { 'Set-Cookie': authCookie(await signToken(context.env, user)) });
 }

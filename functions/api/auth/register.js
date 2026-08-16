@@ -1,4 +1,4 @@
-﻿import { json, jsonError, parseBody } from '../../_lib/helpers.js';
+import { json, jsonError, parseBody } from '../../_lib/helpers.js';
 import { createUser, findUserByUsername, publicUser, signToken, authCookie } from '../../_lib/auth.js';
 import { validateRegister } from '../../_lib/validate.js';
 
@@ -13,5 +13,5 @@ export async function onRequestPost(context) {
     return jsonError('用户名已被注册', 409);
   }
   const user = await createUser(context.env, { username, password, nickname });
-  return json({ user: publicUser(user) }, 201, { 'Set-Cookie': authCookie(signToken(context.env, user)) });
+  return json({ user: publicUser(user) }, 201, { 'Set-Cookie': authCookie(await signToken(context.env, user)) });
 }
