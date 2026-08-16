@@ -1,0 +1,4 @@
+name = "my-melody-space"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-16"
+compatibility_flags = ["nodejs_compat_v2"]
