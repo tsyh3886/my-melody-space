@@ -1,4 +1,4 @@
-// /api/* 中间件：初始化表结构 + JWT 认证
+﻿// /api/* 中间件：初始化表结构 + JWT 认证
 import { jsonError } from '../_lib/helpers.js';
 import { getToken, verifyToken } from '../_lib/auth.js';
 
@@ -56,8 +56,15 @@ export async function onRequest(context) {
   const url = new URL(request.url);
 
   if (!schemaReady) {
-    await env.DB.exec(SCHEMA);
-    schemaReady = true;
+    if (!env.DB) {
+      return jsonError('DB 未绑定：env.DB 不存在，请在 Pages 设置中添加 D1 绑定（变量名 DB）', 500);
+    }
+    try {
+      await env.DB.exec(SCHEMA);
+      schemaReady = true;
+    } catch (err) {
+      return jsonError(`DB 初始化失败: ${err && err.message ? err.message : String(err)}`, 500);
+    }
   }
 
   if (PUBLIC_PATHS.has(url.pathname)) {
